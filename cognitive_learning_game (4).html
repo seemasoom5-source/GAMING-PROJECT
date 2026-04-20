@@ -1,0 +1,907 @@
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Fredoka+One&display=swap');
+  
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  
+  body { font-family: 'Nunito', sans-serif; }
+  
+  #game-root {
+    min-height: 520px;
+    background: var(--color-background-tertiary);
+    border-radius: var(--border-radius-lg);
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .screen { display: none; }
+  .screen.active { display: block; }
+  
+  .title-font { font-family: 'Fredoka One', cursive; }
+  
+  .hub-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    margin-top: 16px;
+  }
+  
+  .game-card {
+    background: var(--color-background-primary);
+    border: 0.5px solid var(--color-border-tertiary);
+    border-radius: var(--border-radius-lg);
+    padding: 18px 14px;
+    cursor: pointer;
+    transition: transform 0.15s, border-color 0.15s;
+    text-align: center;
+    position: relative;
+  }
+  
+  .game-card:hover { transform: translateY(-3px); border-color: var(--color-border-secondary); }
+  
+  .game-card .icon { font-size: 32px; margin-bottom: 8px; }
+  .game-card .card-title { font-size: 15px; font-weight: 700; color: var(--color-text-primary); }
+  .game-card .card-desc { font-size: 12px; color: var(--color-text-secondary); margin-top: 4px; }
+  .game-card .skill-tag {
+    display: inline-block;
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    margin-top: 6px;
+    font-weight: 600;
+  }
+  
+  .tag-memory { background: #EEEDFE; color: #3C3489; }
+  .tag-logic { background: #E1F5EE; color: #085041; }
+  .tag-pattern { background: #FAEEDA; color: #633806; }
+  .tag-focus { background: #FAECE7; color: #712B13; }
+  
+  .score-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    background: var(--color-background-primary);
+    border: 0.5px solid var(--color-border-tertiary);
+    border-radius: var(--border-radius-md);
+    padding: 10px 14px;
+  }
+  
+  .score-pill {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--color-text-primary);
+  }
+  
+  .score-pill span {
+    color: #534AB7;
+    font-size: 16px;
+  }
+  
+  .back-btn {
+    font-size: 12px;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: var(--border-radius-md);
+    border: 0.5px solid var(--color-border-tertiary);
+    background: transparent;
+    font-family: 'Nunito', sans-serif;
+  }
+  
+  .back-btn:hover { background: var(--color-background-secondary); }
+  
+  /* ---- MEMORY GAME ---- */
+  .memory-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin: 0 auto;
+    max-width: 400px;
+  }
+  
+  .mem-card {
+    aspect-ratio: 1;
+    border-radius: var(--border-radius-md);
+    cursor: pointer;
+    font-size: 26px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 0.5px solid var(--color-border-tertiary);
+    background: var(--color-background-primary);
+    transition: transform 0.2s;
+    user-select: none;
+  }
+  
+  .mem-card.flipped { background: #EEEDFE; border-color: #AFA9EC; }
+  .mem-card.matched { background: #E1F5EE; border-color: #5DCAA5; cursor: default; }
+  .mem-card:not(.flipped):not(.matched):hover { transform: scale(1.04); }
+  .mem-card .card-back { font-size: 20px; }
+  
+  /* ---- PATTERN GAME ---- */
+  .pattern-sequence {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin: 12px 0;
+  }
+  
+  .pat-item {
+    width: 52px;
+    height: 52px;
+    border-radius: var(--border-radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    border: 0.5px solid var(--color-border-tertiary);
+    background: var(--color-background-primary);
+  }
+  
+  .pat-item.question {
+    background: var(--color-background-secondary);
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--color-text-secondary);
+  }
+  
+  .choices-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin-top: 14px;
+  }
+  
+  .choice-btn {
+    padding: 12px 6px;
+    border-radius: var(--border-radius-md);
+    border: 0.5px solid var(--color-border-tertiary);
+    background: var(--color-background-primary);
+    font-size: 24px;
+    cursor: pointer;
+    transition: transform 0.15s, border-color 0.15s;
+    font-family: 'Nunito', sans-serif;
+  }
+  
+  .choice-btn:hover { transform: scale(1.06); border-color: var(--color-border-secondary); }
+  .choice-btn.correct { background: #E1F5EE; border-color: #5DCAA5; }
+  .choice-btn.wrong { background: #FCEBEB; border-color: #F09595; }
+  
+  /* ---- LOGIC GAME ---- */
+  .logic-question {
+    background: var(--color-background-primary);
+    border: 0.5px solid var(--color-border-tertiary);
+    border-radius: var(--border-radius-lg);
+    padding: 18px;
+    margin-bottom: 14px;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    line-height: 1.6;
+    text-align: center;
+  }
+  
+  .logic-options {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  
+  .logic-btn {
+    padding: 14px;
+    border-radius: var(--border-radius-md);
+    border: 0.5px solid var(--color-border-tertiary);
+    background: var(--color-background-primary);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.15s;
+    font-family: 'Nunito', sans-serif;
+    color: var(--color-text-primary);
+    text-align: left;
+    line-height: 1.4;
+  }
+  
+  .logic-btn:hover { transform: translateY(-2px); border-color: var(--color-border-secondary); }
+  .logic-btn.correct { background: #E1F5EE; border-color: #5DCAA5; color: #085041; }
+  .logic-btn.wrong { background: #FCEBEB; border-color: #F09595; color: #A32D2D; }
+  
+  /* ---- FOCUS GAME ---- */
+  .focus-area {
+    background: var(--color-background-primary);
+    border: 0.5px solid var(--color-border-tertiary);
+    border-radius: var(--border-radius-lg);
+    padding: 20px;
+    margin-bottom: 14px;
+    min-height: 100px;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--color-text-primary);
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    letter-spacing: 0.04em;
+  }
+  
+  .focus-input {
+    width: 100%;
+    padding: 12px 16px;
+    border-radius: var(--border-radius-md);
+    border: 0.5px solid var(--color-border-tertiary);
+    font-size: 16px;
+    font-family: 'Nunito', sans-serif;
+    background: var(--color-background-primary);
+    color: var(--color-text-primary);
+    margin-bottom: 10px;
+  }
+  
+  .focus-submit {
+    width: 100%;
+    padding: 12px;
+    border-radius: var(--border-radius-md);
+    border: 0.5px solid #AFA9EC;
+    background: #EEEDFE;
+    font-size: 15px;
+    font-weight: 700;
+    color: #3C3489;
+    cursor: pointer;
+    font-family: 'Nunito', sans-serif;
+    transition: transform 0.15s;
+  }
+  
+  .focus-submit:hover { transform: translateY(-1px); }
+  
+  .feedback-msg {
+    text-align: center;
+    font-size: 14px;
+    font-weight: 700;
+    padding: 10px;
+    border-radius: var(--border-radius-md);
+    margin-top: 8px;
+  }
+  
+  .feedback-msg.good { background: #E1F5EE; color: #085041; }
+  .feedback-msg.bad { background: #FCEBEB; color: #A32D2D; }
+  
+  .timer-bar-wrap {
+    height: 6px;
+    background: var(--color-background-secondary);
+    border-radius: 3px;
+    margin-bottom: 12px;
+    overflow: hidden;
+  }
+  
+  .timer-bar {
+    height: 100%;
+    background: #7F77DD;
+    border-radius: 3px;
+    transition: width 0.1s linear;
+  }
+  
+  .next-btn {
+    width: 100%;
+    padding: 12px;
+    margin-top: 10px;
+    border-radius: var(--border-radius-md);
+    border: 0.5px solid #9FE1CB;
+    background: #E1F5EE;
+    font-size: 15px;
+    font-weight: 700;
+    color: #0F6E56;
+    cursor: pointer;
+    font-family: 'Nunito', sans-serif;
+    transition: transform 0.1s;
+    display: none;
+  }
+  
+  .next-btn.show { display: block; }
+  .next-btn:hover { transform: translateY(-1px); }
+  
+  .game-title {
+    font-family: 'Fredoka One', cursive;
+    font-size: 18px;
+    color: var(--color-text-primary);
+    margin-bottom: 4px;
+  }
+  
+  .game-subtitle {
+    font-size: 12px;
+    color: var(--color-text-secondary);
+    margin-bottom: 12px;
+  }
+
+  .stars {
+    display: flex;
+    gap: 4px;
+    justify-content: center;
+    font-size: 28px;
+    margin: 16px 0;
+  }
+
+  .result-score {
+    text-align: center;
+    font-family: 'Fredoka One', cursive;
+    font-size: 40px;
+    color: #534AB7;
+    margin: 8px 0;
+  }
+
+  .result-label {
+    text-align: center;
+    font-size: 14px;
+    color: var(--color-text-secondary);
+    margin-bottom: 20px;
+  }
+
+  .play-again-btn {
+    width: 100%;
+    padding: 13px;
+    border-radius: var(--border-radius-md);
+    border: 0.5px solid #AFA9EC;
+    background: #EEEDFE;
+    font-size: 15px;
+    font-weight: 700;
+    color: #3C3489;
+    cursor: pointer;
+    font-family: 'Nunito', sans-serif;
+    margin-bottom: 10px;
+    transition: transform 0.1s;
+  }
+  .play-again-btn:hover { transform: translateY(-1px); }
+  
+  .hub-title {
+    font-family: 'Fredoka One', cursive;
+    font-size: 24px;
+    color: var(--color-text-primary);
+    margin-bottom: 4px;
+  }
+
+  .hub-subtitle {
+    font-size: 13px;
+    color: var(--color-text-secondary);
+    margin-bottom: 8px;
+  }
+
+  .total-score-display {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #EEEDFE;
+    border: 0.5px solid #AFA9EC;
+    border-radius: 999px;
+    padding: 4px 14px;
+    font-size: 13px;
+    font-weight: 700;
+    color: #3C3489;
+    margin-bottom: 14px;
+  }
+</style>
+
+<div id="game-root">
+
+  <!-- HUB SCREEN -->
+  <div id="screen-hub" class="screen active">
+    <div class="hub-title">🧠 BrainSpark</div>
+    <div class="hub-subtitle">Level up your thinking — pick a challenge!</div>
+    <div class="total-score-display">⭐ Total XP: <span id="total-xp">0</span></div>
+    <div class="hub-grid">
+      <div class="game-card" onclick="startGame('memory')">
+        <div class="icon">🃏</div>
+        <div class="card-title">Memory Match</div>
+        <div class="card-desc">Find all the pairs before time runs out</div>
+        <span class="skill-tag tag-memory">Memory</span>
+      </div>
+      <div class="game-card" onclick="startGame('pattern')">
+        <div class="icon">🔢</div>
+        <div class="card-title">Pattern Finder</div>
+        <div class="card-desc">Spot what comes next in the sequence</div>
+        <span class="skill-tag tag-pattern">Pattern</span>
+      </div>
+      <div class="game-card" onclick="startGame('logic')">
+        <div class="icon">🧩</div>
+        <div class="card-title">Logic Quiz</div>
+        <div class="card-desc">Think carefully and solve tricky problems</div>
+        <span class="skill-tag tag-logic">Reasoning</span>
+      </div>
+      <div class="game-card" onclick="startGame('focus')">
+        <div class="icon">🔡</div>
+        <div class="card-title">Word Sprint</div>
+        <div class="card-desc">Remember and recall words under pressure</div>
+        <span class="skill-tag tag-focus">Focus</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- MEMORY SCREEN -->
+  <div id="screen-memory" class="screen">
+    <div class="score-bar">
+      <div>
+        <div class="game-title">🃏 Memory Match</div>
+        <div style="font-size:11px;color:var(--color-text-secondary)">Find all pairs!</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <div class="score-pill">Moves: <span id="mem-moves">0</span></div>
+        <button class="back-btn" onclick="goHub()">← Hub</button>
+      </div>
+    </div>
+    <div class="memory-grid" id="memory-grid"></div>
+    <div id="mem-result" style="display:none;margin-top:14px;">
+      <div class="stars" id="mem-stars"></div>
+      <div class="result-score" id="mem-xp-earned"></div>
+      <div class="result-label">XP earned this round!</div>
+      <button class="play-again-btn" onclick="startGame('memory')">Play Again</button>
+      <button class="back-btn" style="width:100%;padding:10px" onclick="goHub()">← Back to Hub</button>
+    </div>
+  </div>
+
+  <!-- PATTERN SCREEN -->
+  <div id="screen-pattern" class="screen">
+    <div class="score-bar">
+      <div>
+        <div class="game-title">🔢 Pattern Finder</div>
+        <div style="font-size:11px;color:var(--color-text-secondary)">Round <span id="pat-round">1</span> of 5</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <div class="score-pill">Score: <span id="pat-score">0</span></div>
+        <button class="back-btn" onclick="goHub()">← Hub</button>
+      </div>
+    </div>
+    <div class="timer-bar-wrap"><div class="timer-bar" id="pat-timer"></div></div>
+    <div class="pattern-sequence" id="pat-sequence"></div>
+    <div class="choices-grid" id="pat-choices"></div>
+    <div id="pat-feedback" class="feedback-msg" style="display:none;"></div>
+    <button class="next-btn" id="pat-next" onclick="nextPattern()">Next →</button>
+    <div id="pat-result" style="display:none;margin-top:14px;">
+      <div class="stars" id="pat-stars"></div>
+      <div class="result-score" id="pat-xp-earned"></div>
+      <div class="result-label">XP earned!</div>
+      <button class="play-again-btn" onclick="startGame('pattern')">Play Again</button>
+      <button class="back-btn" style="width:100%;padding:10px" onclick="goHub()">← Back to Hub</button>
+    </div>
+  </div>
+
+  <!-- LOGIC SCREEN -->
+  <div id="screen-logic" class="screen">
+    <div class="score-bar">
+      <div>
+        <div class="game-title">🧩 Logic Quiz</div>
+        <div style="font-size:11px;color:var(--color-text-secondary)">Question <span id="log-q">1</span> of 5</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <div class="score-pill">Score: <span id="log-score">0</span></div>
+        <button class="back-btn" onclick="goHub()">← Hub</button>
+      </div>
+    </div>
+    <div class="timer-bar-wrap"><div class="timer-bar" id="log-timer"></div></div>
+    <div class="logic-question" id="log-question"></div>
+    <div class="logic-options" id="log-options"></div>
+    <div id="log-feedback" class="feedback-msg" style="display:none;"></div>
+    <button class="next-btn" id="log-next" onclick="nextLogic()">Next →</button>
+    <div id="log-result" style="display:none;margin-top:14px;">
+      <div class="stars" id="log-stars"></div>
+      <div class="result-score" id="log-xp-earned"></div>
+      <div class="result-label">XP earned!</div>
+      <button class="play-again-btn" onclick="startGame('logic')">Play Again</button>
+      <button class="back-btn" style="width:100%;padding:10px" onclick="goHub()">← Back to Hub</button>
+    </div>
+  </div>
+
+  <!-- FOCUS / WORD SPRINT SCREEN -->
+  <div id="screen-focus" class="screen">
+    <div class="score-bar">
+      <div>
+        <div class="game-title">🔡 Word Sprint</div>
+        <div style="font-size:11px;color:var(--color-text-secondary)" id="foc-phase-label">Memorize!</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <div class="score-pill">Round <span id="foc-round">1</span>/5</div>
+        <button class="back-btn" onclick="goHub()">← Hub</button>
+      </div>
+    </div>
+    <div class="timer-bar-wrap"><div class="timer-bar" id="foc-timer"></div></div>
+    <div class="focus-area" id="foc-display">Ready...</div>
+    <div id="foc-input-area" style="display:none;">
+      <input class="focus-input" id="foc-input" placeholder="Type the words you saw (separate with spaces)" autocomplete="off" />
+      <button class="focus-submit" onclick="checkFocus()">Check Answer ✓</button>
+    </div>
+    <div id="foc-feedback" class="feedback-msg" style="display:none;"></div>
+    <button class="next-btn" id="foc-next" onclick="nextFocus()">Next →</button>
+    <div id="foc-result" style="display:none;margin-top:14px;">
+      <div class="stars" id="foc-stars"></div>
+      <div class="result-score" id="foc-xp-earned"></div>
+      <div class="result-label">XP earned!</div>
+      <button class="play-again-btn" onclick="startGame('focus')">Play Again</button>
+      <button class="back-btn" style="width:100%;padding:10px" onclick="goHub()">← Back to Hub</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+let totalXP = 0;
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + id).classList.add('active');
+}
+
+function goHub() {
+  clearAllTimers();
+  document.getElementById('total-xp').textContent = totalXP;
+  showScreen('hub');
+}
+
+function startGame(type) {
+  clearAllTimers();
+  if (type === 'memory') initMemory();
+  else if (type === 'pattern') initPattern();
+  else if (type === 'logic') initLogic();
+  else if (type === 'focus') initFocus();
+  showScreen(type);
+}
+
+let allTimers = [];
+function clearAllTimers() {
+  allTimers.forEach(t => { clearTimeout(t); clearInterval(t); });
+  allTimers = [];
+}
+function ST(fn, ms) { let t = setTimeout(fn, ms); allTimers.push(t); return t; }
+function SI(fn, ms) { let t = setInterval(fn, ms); allTimers.push(t); return t; }
+
+// ============ MEMORY GAME ============
+const memEmojis = ['🐶','🐱','🐸','🦊','🐼','🦁','🐯','🦄'];
+let memFlipped = [], memMatched = 0, memMoves = 0, memLock = false, memCards = [];
+
+function initMemory() {
+  memFlipped = []; memMatched = 0; memMoves = 0; memLock = false;
+  document.getElementById('mem-moves').textContent = 0;
+  document.getElementById('mem-result').style.display = 'none';
+  const grid = document.getElementById('memory-grid');
+  grid.style.display = 'grid';
+  
+  let pairs = [...memEmojis, ...memEmojis];
+  pairs.sort(() => Math.random() - 0.5);
+  memCards = pairs;
+  
+  grid.innerHTML = '';
+  pairs.forEach((emoji, i) => {
+    const card = document.createElement('div');
+    card.className = 'mem-card';
+    card.dataset.index = i;
+    card.dataset.emoji = emoji;
+    card.innerHTML = '<span class="card-back">❓</span>';
+    card.onclick = () => flipCard(card);
+    grid.appendChild(card);
+  });
+}
+
+function flipCard(card) {
+  if (memLock || card.classList.contains('flipped') || card.classList.contains('matched')) return;
+  card.classList.add('flipped');
+  card.innerHTML = card.dataset.emoji;
+  memFlipped.push(card);
+  
+  if (memFlipped.length === 2) {
+    memLock = true;
+    memMoves++;
+    document.getElementById('mem-moves').textContent = memMoves;
+    
+    const [a, b] = memFlipped;
+    if (a.dataset.emoji === b.dataset.emoji) {
+      a.classList.add('matched'); b.classList.add('matched');
+      memMatched++;
+      memFlipped = []; memLock = false;
+      if (memMatched === 8) endMemory();
+    } else {
+      ST(() => {
+        a.classList.remove('flipped'); a.innerHTML = '<span class="card-back">❓</span>';
+        b.classList.remove('flipped'); b.innerHTML = '<span class="card-back">❓</span>';
+        memFlipped = []; memLock = false;
+      }, 900);
+    }
+  }
+}
+
+function endMemory() {
+  document.getElementById('memory-grid').style.display = 'none';
+  const xp = Math.max(10, 100 - (memMoves - 8) * 5);
+  totalXP += xp;
+  const stars = xp >= 90 ? 3 : xp >= 60 ? 2 : 1;
+  document.getElementById('mem-stars').textContent = '⭐'.repeat(stars) + '☆'.repeat(3 - stars);
+  document.getElementById('mem-xp-earned').textContent = '+' + xp + ' XP';
+  document.getElementById('mem-result').style.display = 'block';
+}
+
+// ============ PATTERN GAME ============
+const patterns = [
+  { seq: ['2','4','6','8','?'], choices: ['9','10','12','11'], answer: '10' },
+  { seq: ['🔴','🔵','🔴','🔵','?'], choices: ['🟡','🔴','🟢','🔵'], answer: '🔴' },
+  { seq: ['1','4','9','16','?'], choices: ['20','25','30','36'], answer: '25' },
+  { seq: ['🐱','🐶','🐱','🐶','?'], choices: ['🐸','🐱','🐰','🦊'], answer: '🐱' },
+  { seq: ['3','6','12','24','?'], choices: ['36','48','42','30'], answer: '48' },
+  { seq: ['A','C','E','G','?'], choices: ['H','I','J','K'], answer: 'I' },
+  { seq: ['1','2','4','7','?'], choices: ['8','9','11','10'], answer: '11' },
+  { seq: ['🌙','⭐','🌙','⭐','?'], choices: ['☀️','🌙','🌈','🔥'], answer: '🌙' },
+];
+
+let patRound = 0, patScore = 0, patTimer = null, patAnswered = false;
+
+function initPattern() {
+  patRound = 0; patScore = 0;
+  document.getElementById('pat-score').textContent = 0;
+  document.getElementById('pat-result').style.display = 'none';
+  document.getElementById('pat-next').classList.remove('show');
+  loadPattern();
+}
+
+function loadPattern() {
+  patAnswered = false;
+  document.getElementById('pat-round').textContent = patRound + 1;
+  document.getElementById('pat-feedback').style.display = 'none';
+  document.getElementById('pat-next').classList.remove('show');
+  
+  const shuffledPatterns = [...patterns].sort(() => Math.random() - 0.5);
+  const p = shuffledPatterns[patRound % shuffledPatterns.length];
+  
+  const seqEl = document.getElementById('pat-sequence');
+  seqEl.innerHTML = '';
+  p.seq.forEach(item => {
+    const el = document.createElement('div');
+    el.className = 'pat-item' + (item === '?' ? ' question' : '');
+    el.textContent = item;
+    seqEl.appendChild(el);
+  });
+  
+  const choicesEl = document.getElementById('pat-choices');
+  choicesEl.innerHTML = '';
+  const shuffled = [...p.choices].sort(() => Math.random() - 0.5);
+  shuffled.forEach(c => {
+    const btn = document.createElement('button');
+    btn.className = 'choice-btn';
+    btn.textContent = c;
+    btn.onclick = () => checkPattern(btn, c, p.answer);
+    choicesEl.appendChild(btn);
+  });
+  
+  startTimerBar('pat-timer', 12, () => {
+    if (!patAnswered) {
+      patAnswered = true;
+      showFeedback('pat-feedback', '⏰ Time up! Answer: ' + p.answer, false);
+      document.getElementById('pat-next').classList.add('show');
+    }
+  });
+}
+
+function checkPattern(btn, choice, answer) {
+  if (patAnswered) return;
+  patAnswered = true;
+  clearAllTimers();
+  
+  if (choice === answer) {
+    btn.classList.add('correct');
+    patScore += 20;
+    document.getElementById('pat-score').textContent = patScore;
+    showFeedback('pat-feedback', '🎉 Correct! Great pattern spotting!', true);
+  } else {
+    btn.classList.add('wrong');
+    showFeedback('pat-feedback', '❌ Not quite. The answer was: ' + answer, false);
+  }
+  document.getElementById('pat-next').classList.add('show');
+}
+
+function nextPattern() {
+  patRound++;
+  if (patRound >= 5) endPattern();
+  else loadPattern();
+}
+
+function endPattern() {
+  document.getElementById('pat-sequence').innerHTML = '';
+  document.getElementById('pat-choices').innerHTML = '';
+  document.getElementById('pat-feedback').style.display = 'none';
+  document.getElementById('pat-next').classList.remove('show');
+  totalXP += patScore;
+  const stars = patScore >= 90 ? 3 : patScore >= 60 ? 2 : 1;
+  document.getElementById('pat-stars').textContent = '⭐'.repeat(stars) + '☆'.repeat(3 - stars);
+  document.getElementById('pat-xp-earned').textContent = '+' + patScore + ' XP';
+  document.getElementById('pat-result').style.display = 'block';
+}
+
+// ============ LOGIC GAME ============
+const logicQs = [
+  { q: 'All dogs are animals. Rex is a dog. What is Rex?', opts: ['A plant','An animal','A bird','A fish'], ans: 'An animal' },
+  { q: 'Sara has 5 apples. She gives 2 to Tom and gets 3 from Mia. How many does Sara have now?', opts: ['4','5','6','7'], ans: '6' },
+  { q: 'Which shape has the most sides?\nTriangle, Circle, Pentagon, Square', opts: ['Triangle','Circle','Pentagon','Square'], ans: 'Pentagon' },
+  { q: 'If today is Wednesday, what day was it 3 days ago?', opts: ['Monday','Sunday','Friday','Saturday'], ans: 'Sunday' },
+  { q: 'A train leaves at 9:00 AM and arrives after 2.5 hours. What time does it arrive?', opts: ['11:00 AM','11:30 AM','12:00 PM','10:30 AM'], ans: '11:30 AM' },
+  { q: 'Which number does NOT belong?\n2, 4, 6, 9, 12', opts: ['2','6','9','12'], ans: '9' },
+  { q: 'If A = 1, B = 2, C = 3... What is the value of CAB?', opts: ['123','312','321','213'], ans: '312' },
+  { q: 'There are 3 red, 5 blue, and 2 green balls. What fraction are red?', opts: ['1/5','3/10','3/5','1/3'], ans: '3/10' },
+];
+
+let logQ = 0, logScore = 0, logAnswered = false;
+
+function initLogic() {
+  logQ = 0; logScore = 0;
+  document.getElementById('log-score').textContent = 0;
+  document.getElementById('log-result').style.display = 'none';
+  document.getElementById('log-next').classList.remove('show');
+  loadLogic();
+}
+
+function loadLogic() {
+  logAnswered = false;
+  document.getElementById('log-q').textContent = logQ + 1;
+  document.getElementById('log-feedback').style.display = 'none';
+  document.getElementById('log-next').classList.remove('show');
+  
+  const shuffledQs = [...logicQs].sort(() => Math.random() - 0.5);
+  const q = shuffledQs[logQ % shuffledQs.length];
+  document.getElementById('log-question').textContent = q.q;
+  
+  const optsEl = document.getElementById('log-options');
+  optsEl.innerHTML = '';
+  q.opts.forEach(opt => {
+    const btn = document.createElement('button');
+    btn.className = 'logic-btn';
+    btn.textContent = opt;
+    btn.onclick = () => checkLogic(btn, opt, q.ans);
+    optsEl.appendChild(btn);
+  });
+  
+  startTimerBar('log-timer', 15, () => {
+    if (!logAnswered) {
+      logAnswered = true;
+      showFeedback('log-feedback', '⏰ Time up! Answer: ' + q.ans, false);
+      document.getElementById('log-next').classList.add('show');
+    }
+  });
+}
+
+function checkLogic(btn, choice, answer) {
+  if (logAnswered) return;
+  logAnswered = true;
+  clearAllTimers();
+  
+  if (choice === answer) {
+    btn.classList.add('correct');
+    logScore += 20;
+    document.getElementById('log-score').textContent = logScore;
+    showFeedback('log-feedback', '🎉 Correct! Sharp thinking!', true);
+  } else {
+    btn.classList.add('wrong');
+    document.querySelectorAll('.logic-btn').forEach(b => {
+      if (b.textContent === answer) b.classList.add('correct');
+    });
+    showFeedback('log-feedback', '❌ Not quite. Answer: ' + answer, false);
+  }
+  document.getElementById('log-next').classList.add('show');
+}
+
+function nextLogic() {
+  logQ++;
+  if (logQ >= 5) endLogic();
+  else loadLogic();
+}
+
+function endLogic() {
+  document.getElementById('log-question').textContent = '';
+  document.getElementById('log-options').innerHTML = '';
+  document.getElementById('log-feedback').style.display = 'none';
+  document.getElementById('log-next').classList.remove('show');
+  totalXP += logScore;
+  const stars = logScore >= 90 ? 3 : logScore >= 60 ? 2 : 1;
+  document.getElementById('log-stars').textContent = '⭐'.repeat(stars) + '☆'.repeat(3 - stars);
+  document.getElementById('log-xp-earned').textContent = '+' + logScore + ' XP';
+  document.getElementById('log-result').style.display = 'block';
+}
+
+// ============ FOCUS / WORD SPRINT ============
+const wordSets = [
+  ['sun','cat','run'],['apple','river','tiger'],['blue','jump','chair'],
+  ['cloud','pencil','dance'],['bread','horse','green'],['lamp','ocean','quick'],
+  ['kite','music','train'],['light','grape','stone'],
+];
+
+let focRound = 0, focScore = 0, focCurrentWords = [], focPhase = 'show';
+
+function initFocus() {
+  focRound = 0; focScore = 0; focPhase = 'show';
+  document.getElementById('foc-result').style.display = 'none';
+  document.getElementById('foc-input-area').style.display = 'none';
+  document.getElementById('foc-feedback').style.display = 'none';
+  document.getElementById('foc-next').classList.remove('show');
+  loadFocus();
+}
+
+function loadFocus() {
+  focPhase = 'show';
+  document.getElementById('foc-round').textContent = focRound + 1;
+  document.getElementById('foc-feedback').style.display = 'none';
+  document.getElementById('foc-next').classList.remove('show');
+  document.getElementById('foc-input-area').style.display = 'none';
+  
+  const wordCount = Math.min(3 + Math.floor(focRound / 2), 5);
+  const allWords = wordSets.sort(() => Math.random() - 0.5).slice(0, wordCount).flat().slice(0, wordCount);
+  focCurrentWords = allWords.slice(0, wordCount);
+  
+  document.getElementById('foc-phase-label').textContent = '👀 Memorize these words!';
+  document.getElementById('foc-display').textContent = focCurrentWords.join('  ·  ');
+  
+  let timeLeft = 4;
+  startTimerBar('foc-timer', 4, () => {
+    document.getElementById('foc-display').textContent = '🤔 Now type the words you remember...';
+    document.getElementById('foc-phase-label').textContent = '⌨️ Type what you saw!';
+    document.getElementById('foc-input-area').style.display = 'block';
+    document.getElementById('foc-input').value = '';
+    document.getElementById('foc-input').focus();
+  });
+}
+
+function checkFocus() {
+  const input = document.getElementById('foc-input').value.toLowerCase().trim();
+  const typed = input.split(/\s+/).filter(w => w.length > 0);
+  const correct = focCurrentWords.filter(w => typed.includes(w.toLowerCase()));
+  const score = Math.round((correct.length / focCurrentWords.length) * 20);
+  focScore += score;
+  
+  document.getElementById('foc-input-area').style.display = 'none';
+  const fb = document.getElementById('foc-feedback');
+  if (correct.length === focCurrentWords.length) {
+    fb.textContent = '🎉 Perfect! You remembered all ' + focCurrentWords.length + ' words!';
+    fb.className = 'feedback-msg good';
+  } else {
+    fb.textContent = '✅ ' + correct.length + '/' + focCurrentWords.length + ' correct. Words were: ' + focCurrentWords.join(', ');
+    fb.className = 'feedback-msg bad';
+  }
+  fb.style.display = 'block';
+  document.getElementById('foc-next').classList.add('show');
+}
+
+function nextFocus() {
+  focRound++;
+  if (focRound >= 5) endFocus();
+  else loadFocus();
+}
+
+function endFocus() {
+  document.getElementById('foc-display').textContent = 'Done!';
+  document.getElementById('foc-input-area').style.display = 'none';
+  document.getElementById('foc-feedback').style.display = 'none';
+  document.getElementById('foc-next').classList.remove('show');
+  totalXP += focScore;
+  const stars = focScore >= 90 ? 3 : focScore >= 60 ? 2 : 1;
+  document.getElementById('foc-stars').textContent = '⭐'.repeat(stars) + '☆'.repeat(3 - stars);
+  document.getElementById('foc-xp-earned').textContent = '+' + focScore + ' XP';
+  document.getElementById('foc-result').style.display = 'block';
+}
+
+// ============ HELPERS ============
+function showFeedback(id, msg, good) {
+  const el = document.getElementById(id);
+  el.textContent = msg;
+  el.className = 'feedback-msg ' + (good ? 'good' : 'bad');
+  el.style.display = 'block';
+}
+
+function startTimerBar(id, seconds, onDone) {
+  const bar = document.getElementById(id);
+  bar.style.width = '100%';
+  let elapsed = 0;
+  const interval = 100;
+  const total = seconds * 1000;
+  const t = SI(() => {
+    elapsed += interval;
+    const pct = Math.max(0, 100 - (elapsed / total * 100));
+    bar.style.width = pct + '%';
+    if (elapsed >= total) {
+      clearInterval(t);
+      onDone();
+    }
+  }, interval);
+}
+</script>
